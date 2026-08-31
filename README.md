@@ -268,7 +268,7 @@ GitHub Actions: [`.github/workflows/android-ci.yml`](.github/workflows/android-c
 |---|---|
 | `quality` | `./gradlew ktlintCheck` (code style) + `./gradlew lint` (Android Lint), laporan diunggah sebagai artifact |
 | `test` | `./gradlew jacocoTestReport` — unit test + coverage, ringkasan coverage ditulis ke Job Summary |
-| `vulnerabilities` | `gradle/actions/dependency-submission` (dependency graph → advisory GitHub) + pemindaian Trivy (`vuln,secret`) |
+| `security` | **CodeQL** (`security-extended`, java-kotlin) + **Trivy** (`vuln,secret,misconfig`) — analisis keamanan kode dan dependensi |
 | `build` | `./gradlew assembleRelease` (build yang menjalankan R8) dan `assembleDebug`; APK + `mapping.txt` diunggah sebagai artifact |
 
 Job `build` menunggu `quality` dan `test` lulus lebih dulu, jadi APK hanya dibuat dari kode yang

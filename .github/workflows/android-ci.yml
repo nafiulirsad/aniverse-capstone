@@ -104,11 +104,13 @@ jobs:
                         */build/reports/jacoco/
                     if-no-files-found: ignore
 
-    vulnerabilities:
-        name: Dependency vulnerability scan
+    security:
+        name: Security analysis (CodeQL + Trivy)
         runs-on: ubuntu-latest
         permissions:
-            contents: write
+            contents: read
+            actions: read
+            security-events: write
         steps:
             -   uses: actions/checkout@v5
 
@@ -123,16 +125,33 @@ jobs:
                 with:
                     packages: ${{ env.ANDROID_PACKAGES }}
 
-            # Publishes the resolved dependency graph to GitHub, which matches it against the
-            # advisory database and raises an alert on any library with a known CVE.
-            -   name: Submit dependency graph
-                uses: gradle/actions/dependency-submission@v5
+            -   name: Set up Gradle
+                uses: gradle/actions/setup-gradle@v5
 
-            -   name: Scan the project with Trivy
+            # Static application security testing: CodeQL reads the compiled Kotlin and looks for
+            # injection, crypto misuse, and data-flow problems in the app's own code.
+            -   name: Initialise CodeQL
+                uses: github/codeql-action/init@v4
+                with:
+                    languages: java-kotlin
+                    build-mode: manual
+                    queries: security-extended
+
+            -   name: Compile for CodeQL
+                run: ./gradlew assembleDebug --stacktrace
+
+            -   name: Run CodeQL analysis
+                uses: github/codeql-action/analyze@v4
+                with:
+                    category: /language:java-kotlin
+
+            # Software composition analysis: known CVEs in the dependencies, plus a scan for
+            # credentials accidentally committed to the repository.
+            -   name: Scan dependencies and secrets with Trivy
                 uses: aquasecurity/trivy-action@v0.36.0
                 with:
                     scan-type: fs
-                    scanners: vuln,secret
+                    scanners: vuln,secret,misconfig
                     severity: CRITICAL,HIGH
                     exit-code: '0'
                     format: table
