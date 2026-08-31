@@ -163,6 +163,7 @@ tidak perlu mencari.
 | 3 | **Certificate pinning** | [`core/.../data/source/remote/network/CertificatePinnerFactory.kt`](core/src/main/java/com/nafiulirsad/capstone/core/data/source/remote/network/CertificatePinnerFactory.kt), dipasang di [`core/.../di/CoreModule.kt`](core/src/main/java/com/nafiulirsad/capstone/core/di/CoreModule.kt) |
 | + | **Network security config** | [`app/src/main/res/xml/network_security_config.xml`](app/src/main/res/xml/network_security_config.xml) — HTTP polos ditolak, CA buatan pengguna tidak dipercaya |
 | + | **Backup dimatikan** | [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml) `allowBackup="false"` + [`backup_rules.xml`](app/src/main/res/xml/backup_rules.xml) / [`data_extraction_rules.xml`](app/src/main/res/xml/data_extraction_rules.xml) |
+| + | **Sisa database lama dihapus** | `EncryptedDatabaseFactory.deleteLegacyPlainTextDatabase()` — file plain-text `aniverse.db` dari versi 1.0 dihapus saat pertama kali versi 2.0 dijalankan |
 | + | **Log dibuang di release** | `-assumenosideeffects class android.util.Log` di [`app/proguard-rules.pro`](app/proguard-rules.pro) + `HttpLoggingInterceptor.Level.NONE` saat `!BuildConfig.DEBUG` |
 | + | **TLS dibatasi** | `ConnectionSpec.RESTRICTED_TLS` di `networkModule` — TLS 1.2/1.3 dengan cipher modern saja |
 
@@ -219,6 +220,13 @@ sertifikat diperbarui. Dengan pin ini, proxy penyadap (Charles/mitmproxy) langsu
   * pengumpulan Flow memakai `viewLifecycleOwner.repeatOnLifecycle(STARTED)`, bukan `lifecycleScope` milik Fragment;
   * `StateFlow` layar memakai `SharingStarted.WhileSubscribed`, jadi *upstream* berhenti saat layar tidak terlihat;
   * modul Koin milik dynamic feature di-`unloadKoinModules()` pada `onDestroy()`.
+* **Hasil analisa di perangkat fisik** (Xiaomi 2312DRAABG, Android 15): menelusuri Jelajah →
+  pencarian → Detail → favorit → share → Favorit → Pengaturan (ganti tema, Activity dibuat ulang)
+  → rotasi layar → keluar aplikasi. LeakCanary melaporkan **0 Distinct Leaks**, tidak ada
+  *heap dump* yang terpicu, dan `adb logcat -b crash` kosong.
+
+  ![LeakCanary 0 leaks](docs/leakcanary-0-leaks.png)
+
 * **Android Lint** bersih untuk kategori performa (Overdraw, UseCompoundDrawables,
   DisableBaselineAlignment, UnusedResources semuanya sudah dibereskan). Satu-satunya peringatan
   yang tersisa adalah `OldTargetApi` (informasi bahwa `targetSdk` 36, sementara compileSdk 37) —

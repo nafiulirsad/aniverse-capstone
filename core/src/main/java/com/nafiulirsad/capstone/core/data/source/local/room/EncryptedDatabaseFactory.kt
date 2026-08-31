@@ -16,6 +16,7 @@ object EncryptedDatabaseFactory {
 
     fun create(context: Context, passphraseProvider: DatabasePassphraseProvider): AnimeDatabase {
         System.loadLibrary(SQLCIPHER_LIBRARY)
+        deleteLegacyPlainTextDatabase(context)
 
         return Room.databaseBuilder(
             context,
@@ -27,5 +28,15 @@ object EncryptedDatabaseFactory {
             .build()
     }
 
+    /**
+     * Version 1.0 stored the same cache in an unencrypted file. Leaving it on disk would keep the
+     * plain-text copy readable long after the app switched to SQLCipher, so it is removed on the
+     * first run of an upgraded install (this also deletes its `-wal` and `-shm` files).
+     */
+    private fun deleteLegacyPlainTextDatabase(context: Context) {
+        context.deleteDatabase(LEGACY_DATABASE_NAME)
+    }
+
     private const val SQLCIPHER_LIBRARY = "sqlcipher"
+    private const val LEGACY_DATABASE_NAME = "aniverse.db"
 }
