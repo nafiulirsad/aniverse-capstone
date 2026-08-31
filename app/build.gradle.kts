@@ -13,18 +13,6 @@ android {
         targetSdk = 36
         versionCode = 2
         versionName = "2.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    signingConfigs {
-        // The release build is signed with the debug key on purpose: this is a course submission,
-        // so the reviewer (and CI) can install the obfuscated APK without any private keystore.
-        getByName("debug") {
-            storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-        }
     }
 
     buildTypes {
@@ -37,6 +25,9 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+
+            // Signed with the standard debug key on purpose: this is a course submission, so the
+            // reviewer and CI can install the obfuscated APK without a private keystore.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
