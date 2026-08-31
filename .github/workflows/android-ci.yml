@@ -125,9 +125,6 @@ jobs:
                 with:
                     packages: ${{ env.ANDROID_PACKAGES }}
 
-            -   name: Set up Gradle
-                uses: gradle/actions/setup-gradle@v5
-
             # Static application security testing: CodeQL reads the compiled Kotlin and looks for
             # injection, crypto misuse, and data-flow problems in the app's own code.
             -   name: Create the Android debug keystore
@@ -146,8 +143,13 @@ jobs:
                     build-mode: manual
                     queries: security-extended
 
+            # No Gradle cache and no daemon here: CodeQL can only see the code that is actually
+            # compiled inside its tracer, so an up-to-date build would leave the database empty.
             -   name: Compile for CodeQL
-                run: ./gradlew assembleDebug --stacktrace
+                run: |
+                    ./gradlew clean assembleDebug \
+                        --no-daemon --no-build-cache --rerun-tasks --stacktrace \
+                        -Pkotlin.compiler.execution.strategy=in-process
 
             -   name: Run CodeQL analysis
                 uses: github/codeql-action/analyze@v4
