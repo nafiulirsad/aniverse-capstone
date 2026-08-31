@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AniVerse</string>
+
+    <string name="title_home">Jelajah</string>
+    <string name="title_favorite">Favorit</string>
+    <string name="title_setting">Pengaturan</string>
+    <string name="title_detail">Detail Anime</string>
+
+    <string name="home_headline">Anime Populer</string>
+    <string name="home_subtitle">Judul terpopuler versi Kitsu</string>
+    <string name="search_hint">Cari judul anime…</string>
+
+    <string name="empty_home">Belum ada anime untuk ditampilkan.</string>
+    <string name="empty_search">Anime yang Anda cari tidak ditemukan.</string>
+    <string name="empty_favorite">Belum ada anime favorit.\nTekan tombol favorit di halaman detail untuk menyimpannya.</string>
+
+    <string name="action_retry">Coba Lagi</string>
+    <string name="action_add_favorite">Tambah Favorit</string>
+    <string name="action_remove_favorite">Hapus Favorit</string>
+    <string name="action_watch_trailer">Tonton Trailer</string>
+    <string name="action_back">Kembali</string>
+    <string name="action_share">Bagikan</string>
+
+    <string name="favorite_added">Ditambahkan ke favorit.</string>
+    <string name="favorite_removed">Dihapus dari favorit.</string>
+    <string name="home_showing_cache">Server sedang tidak bisa dihubungi, menampilkan data tersimpan.</string>
+    <string name="detail_showing_cache">Gagal memuat data terbaru, menampilkan data tersimpan.</string>
+    <string name="error_no_browser">Tidak ada aplikasi yang bisa membuka tautan ini.</string>
+    <string name="error_no_share_target">Tidak ada aplikasi untuk membagikan konten ini.</string>
+
+    <string name="label_score">Skor</string>
+    <string name="label_rank">Peringkat</string>
+    <string name="label_members">Anggota</string>
+    <string name="label_duration">Durasi</string>
+    <string name="label_age_rating">Rating Usia</string>
+    <string name="label_genre">Genre</string>
+    <string name="label_synopsis">Sinopsis</string>
+    <string name="label_unknown">Tidak diketahui</string>
+    <string name="label_no_synopsis">Sinopsis belum tersedia.</string>
+
+    <string name="format_rank">#%1$d</string>
+    <string name="format_share">%1$s (skor %2$s) — %3$s\n\nDitemukan lewat AniVerse.</string>
+
+    <string name="status_finished">Selesai tayang</string>
+    <string name="status_airing">Sedang tayang</string>
+    <string name="status_upcoming">Akan tayang</string>
+
+    <string name="setting_appearance">Tampilan</string>
+    <string name="setting_theme_description">Pilih tema yang paling nyaman untuk mata Anda.</string>
+    <string name="setting_theme_system">Ikuti sistem</string>
+    <string name="setting_theme_light">Terang</string>
+    <string name="setting_theme_dark">Gelap</string>
+    <string name="setting_about">Tentang Aplikasi</string>
+    <string name="setting_about_description">AniVerse menampilkan katalog anime dari Kitsu API. Dibangun dengan Clean Architecture, modularization, Koin, dan Kotlin Flow. Database dienkripsi SQLCipher dan koneksi jaringan memakai certificate pinning.</string>
+    <string name="setting_version">Versi 2.0</string>
+
+    <string name="cd_poster">Poster anime</string>
+    <string name="cd_backdrop">Gambar latar anime</string>
+    <string name="cd_state_illustration">Ilustrasi status</string>
+    <plurals name="format_episodes">
+        <item quantity="other">%1$d eps</item>
+    </plurals>
+
+    <plurals name="format_duration">
+        <item quantity="other">%1$d menit per episode</item>
+    </plurals>
+
+</resources>

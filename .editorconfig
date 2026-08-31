@@ -1,0 +1,28 @@
+root = true
+
+# Code style enforced by `./gradlew ktlintCheck` (and by Android Studio, which reads this file).
+[*.{kt,kts}]
+ktlint_code_style = ktlint_official
+indent_style = space
+indent_size = 4
+max_line_length = 120
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Rules switched off on purpose - they fight the layout the Android Kotlin style guide asks for,
+# which this project follows (multiline signatures with a trailing comma, chained builder calls).
+ktlint_standard_function-signature = disabled
+# A two-parameter constructor still reads fine on one line; only wrap from three onwards.
+ktlint_class_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than = 3
+ktlint_standard_multiline-expression-wrapping = disabled
+ktlint_standard_chain-method-continuation = disabled
+ktlint_standard_no-empty-first-line-in-class-body = disabled
+# `_binding` + `binding` is the ViewBinding idiom the Android docs prescribe for fragments.
+ktlint_standard_backing-property-naming = disabled
+# Unit tests describe behaviour in backticked sentences, which the naming rule would reject.
+ktlint_standard_function-naming = disabled
+
+[*.{xml,yml,yaml,json}]
+indent_style = space
+indent_size = 4
+insert_final_newline = true

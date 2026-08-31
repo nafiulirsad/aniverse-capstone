@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.nafiulirsad.capstone.presentation.home.HomeFragment"
+        android:label="@string/title_home"
+        tools:layout="@layout/fragment_home" />
+
+    <!-- Lives in the :favorite dynamic feature module and is installed on demand. -->
+    <fragment
+        android:id="@+id/favoriteFragment"
+        android:name="com.nafiulirsad.capstone.favorite.presentation.FavoriteFragment"
+        android:label="@string/title_favorite"
+        app:moduleName="favorite" />
+
+    <fragment
+        android:id="@+id/settingFragment"
+        android:name="com.nafiulirsad.capstone.presentation.setting.SettingFragment"
+        android:label="@string/title_setting"
+        tools:layout="@layout/fragment_setting" />
+
+    <fragment
+        android:id="@+id/detailFragment"
+        android:name="com.nafiulirsad.capstone.presentation.detail.DetailFragment"
+        android:label="@string/title_detail"
+        tools:layout="@layout/fragment_detail">
+        <argument
+            android:name="animeId"
+            app:argType="integer" />
+    </fragment>
+
+    <!-- Global so both the Home screen and the dynamic feature can open a detail page. -->
+    <action
+        android:id="@+id/action_global_detail"
+        app:destination="@id/detailFragment" />
+
+</navigation>

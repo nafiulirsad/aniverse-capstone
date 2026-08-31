@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_no_connection">Tidak ada koneksi internet. Periksa jaringan Anda lalu coba lagi.</string>
+    <string name="error_timeout">Koneksi ke server terlalu lama. Silakan coba lagi.</string>
+    <string name="error_rate_limited">Terlalu banyak permintaan ke server. Tunggu sebentar lalu coba lagi.</string>
+    <string name="error_server">Server sedang bermasalah (kode %1$d). Silakan coba lagi nanti.</string>
+    <string name="error_unknown">Terjadi kesalahan yang tidak diketahui. Silakan coba lagi.</string>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="title_favorite_module">Favorit</string>
+    <string name="favorite_headline">Anime Favorit</string>
+    <string name="favorite_subtitle">Koleksi yang Anda simpan secara offline</string>
+</resources>

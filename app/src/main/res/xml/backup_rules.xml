@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backup policy for Android 11 and below. Nothing leaves the device: see
+    res/xml/data_extraction_rules.xml for the Android 12+ equivalent.
+-->
+<full-backup-content>
+    <exclude
+        domain="database"
+        path="." />
+    <exclude
+        domain="sharedpref"
+        path="." />
+    <exclude
+        domain="file"
+        path="." />
+</full-backup-content>

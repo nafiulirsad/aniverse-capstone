@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Transport hardening that complements the OkHttp certificate pinning:
+      - no plain-text HTTP at all, on any build type;
+      - only the certificate authorities shipped with the system are trusted, so a CA that a user
+        (or an attacker with device access) installed cannot be used to intercept the traffic.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
