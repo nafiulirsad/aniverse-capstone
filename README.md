@@ -1,5 +1,7 @@
 # AniVerse — Capstone Project (Dicoding Menjadi Android Developer Expert)
 
+[![Android CI](https://github.com/nafiulirsad/aniverse-capstone/actions/workflows/android-ci.yml/badge.svg)](https://github.com/nafiulirsad/aniverse-capstone/actions/workflows/android-ci.yml)
+
 Aplikasi katalog anime yang dibangun dengan **Clean Architecture**, **Modularization**
 (1 Android Library + 1 Dynamic Feature), **Dependency Injection dengan Koin**, dan
 **Reactive Programming dengan Kotlin Flow**.
@@ -18,6 +20,7 @@ Sumber data: [**Kitsu API**](https://kitsu.docs.apiary.io) — katalog anime pub
 | 3 | **List Favorite** | Modul **dynamic feature** terpisah yang membaca database Room secara *reactive*. |
 | + | **Search** (fitur tambahan) | Pencarian judul dengan `debounce` + `flatMapLatest`, sehingga request lama otomatis dibatalkan. Bila server sedang bermasalah, hasil diambil dari cache lokal. |
 | + | **Setting** (fitur tambahan) | Pilihan tema (Ikuti sistem / Terang / Gelap) yang disimpan di DataStore dan diterapkan secara *reactive*. |
+| + | **Share** (fitur tambahan) | Membagikan judul, skor, dan tautan anime lewat `Intent.ACTION_SEND` dari menu toolbar halaman detail. |
 
 ---
 
@@ -119,7 +122,10 @@ Home maupun dari modul Favorite memakai satu *global action* yang sama
 | Preferences | DataStore Preferences |
 | Navigasi | Navigation Component + Dynamic Features Fragment |
 | Gambar | Glide 5 |
-| Build | AGP 9.3.2, Gradle 9.7, compileSdk 37, minSdk 24, targetSdk 36 |
+| Keamanan | SQLCipher 4.18 (enkripsi database), Android Keystore (AES-256/GCM), OkHttp `CertificatePinner`, R8/ProGuard |
+| Performa | LeakCanary 2.14 (khusus build debug) |
+| Kualitas | ktlint 1.8, Android Lint, JaCoCo 0.8.14, JUnit 4 + MockK + Turbine, GitHub Actions |
+| Build | AGP 9.3.2, Gradle 9.7.1, compileSdk 37, minSdk 24, targetSdk 36 |
 
 ---
 
@@ -145,16 +151,139 @@ daftar dan halaman favorit tetap bisa dibuka secara offline.
 
 ---
 
-## ✅ Unit Test
+## 🔐 Keamanan
 
-11 test, semuanya lulus lewat `./gradlew test`.
+Tiga teknik wajib, plus empat lapis tambahan. Semua lokasi kelas ditulis lengkap supaya reviewer
+tidak perlu mencari.
+
+| # | Teknik | Lokasi |
+|---|---|---|
+| 1 | **Obfuscation (ProGuard/R8)** | [`app/build.gradle.kts`](app/build.gradle.kts) → `buildTypes.release { isMinifyEnabled = true; isShrinkResources = true }`, aturan di [`app/proguard-rules.pro`](app/proguard-rules.pro) dan [`core/consumer-rules.pro`](core/consumer-rules.pro) |
+| 2 | **Enkripsi database** | [`core/.../data/source/local/room/EncryptedDatabaseFactory.kt`](core/src/main/java/com/nafiulirsad/capstone/core/data/source/local/room/EncryptedDatabaseFactory.kt) + [`core/.../data/source/local/security/DatabasePassphraseProvider.kt`](core/src/main/java/com/nafiulirsad/capstone/core/data/source/local/security/DatabasePassphraseProvider.kt) |
+| 3 | **Certificate pinning** | [`core/.../data/source/remote/network/CertificatePinnerFactory.kt`](core/src/main/java/com/nafiulirsad/capstone/core/data/source/remote/network/CertificatePinnerFactory.kt), dipasang di [`core/.../di/CoreModule.kt`](core/src/main/java/com/nafiulirsad/capstone/core/di/CoreModule.kt) |
+| + | **Network security config** | [`app/src/main/res/xml/network_security_config.xml`](app/src/main/res/xml/network_security_config.xml) — HTTP polos ditolak, CA buatan pengguna tidak dipercaya |
+| + | **Backup dimatikan** | [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml) `allowBackup="false"` + [`backup_rules.xml`](app/src/main/res/xml/backup_rules.xml) / [`data_extraction_rules.xml`](app/src/main/res/xml/data_extraction_rules.xml) |
+| + | **Log dibuang di release** | `-assumenosideeffects class android.util.Log` di [`app/proguard-rules.pro`](app/proguard-rules.pro) + `HttpLoggingInterceptor.Level.NONE` saat `!BuildConfig.DEBUG` |
+| + | **TLS dibatasi** | `ConnectionSpec.RESTRICTED_TLS` di `networkModule` — TLS 1.2/1.3 dengan cipher modern saja |
+
+### 1. Obfuscation
+
+`assembleRelease` menjalankan R8 dengan `proguard-android-optimize.txt` + aturan proyek.
+Selain me-*rename*, konfigurasinya memakai `-repackageclasses` dan `-allowaccessmodification`
+sehingga seluruh kelas dipindah ke satu paket datar. Bukti dari `mapping.txt` hasil build:
 
 ```
-core/src/test/java/com/nafiulirsad/capstone/core/
-├── data/AnimeMapperTest.kt          → JSON:API → domain: rescale skor 100→10, genre dari
-│                                      array `included`, URL trailer YouTube, entri rusak dibuang
-├── data/NetworkBoundResourceTest.kt → alur cache-hit, refresh sukses, dan refresh gagal
-└── domain/model/ThemeModeTest.kt    → fallback tema saat nilai tersimpan tidak dikenal
+com.nafiulirsad.capstone.core.data.AnimeRepository        -> com.nafiulirsad.capstone.s5:
+com.nafiulirsad.capstone.core.domain.usecase.AnimeInteractor -> com.nafiulirsad.capstone.d6:
+```
+
+Kelas turunan `Fragment` sengaja dipertahankan namanya, karena Navigation Component memuatnya
+dari `nav_graph.xml` berdasarkan nama kelas.
+
+### 2. Enkripsi database
+
+Room dibuka lewat `SupportOpenHelperFactory` milik **SQLCipher**, jadi seluruh halaman
+`aniverse_encrypted.db` ditulis dalam bentuk terenkripsi AES-256.
+
+*Passphrase*-nya 32 byte acak yang dibuat sekali di perangkat, lalu **disegel dengan kunci
+AES-256/GCM di dalam Android Keystore** dan disimpan sebagai ciphertext di SharedPreferences.
+Artinya kunci sesungguhnya tidak pernah ada di APK, tidak muncul di hasil *decompile*, dan tidak
+ikut terbawa saat file preferensi disalin ke perangkat lain. Bila entri Keystore rusak
+(mis. hasil restore backup), aplikasi membuat kunci baru dan database baru — tidak *crash*.
+
+Verifikasi manual:
+
+```bash
+adb shell run-as com.nafiulirsad.capstone cat databases/aniverse_encrypted.db > db.bin
+file db.bin      # "data" — bukan "SQLite 3.x database"
+head -c 16 db.bin | xxd   # tidak ada header "SQLite format 3"
+```
+
+### 3. Certificate pinning
+
+`CertificatePinnerFactory` menyematkan **dua** SHA-256 SPKI untuk host `kitsu.io`: sertifikat
+*intermediate* Google Trust Services `WE1` dan root `GTS Root R4`. Sertifikat *leaf* sengaja tidak
+disematkan karena diputar setiap ~90 hari — menyematkannya akan mematikan aplikasi begitu
+sertifikat diperbarui. Dengan pin ini, proxy penyadap (Charles/mitmproxy) langsung gagal
+*handshake*. Konfigurasinya dijaga unit test
+[`CertificatePinnerFactoryTest`](core/src/test/java/com/nafiulirsad/capstone/core/data/source/remote/network/CertificatePinnerFactoryTest.kt).
+
+---
+
+## ⚡ Performa
+
+* **LeakCanary 2.14** dipasang sebagai `debugImplementation` di [`app/build.gradle.kts`](app/build.gradle.kts),
+  sehingga hanya ada di build debug dan tidak pernah ikut ke APK rilis.
+* Pola anti-kebocoran yang dipakai di seluruh layar:
+  * `_binding` di-`null`-kan pada `onDestroyView()`, dan `RecyclerView.adapter = null` sebelum itu;
+  * pengumpulan Flow memakai `viewLifecycleOwner.repeatOnLifecycle(STARTED)`, bukan `lifecycleScope` milik Fragment;
+  * `StateFlow` layar memakai `SharingStarted.WhileSubscribed`, jadi *upstream* berhenti saat layar tidak terlihat;
+  * modul Koin milik dynamic feature di-`unloadKoinModules()` pada `onDestroy()`.
+* **Android Lint** bersih untuk kategori performa (Overdraw, UseCompoundDrawables,
+  DisableBaselineAlignment, UnusedResources semuanya sudah dibereskan). Satu-satunya peringatan
+  yang tersisa adalah `OldTargetApi` (informasi bahwa `targetSdk` 36, sementara compileSdk 37) —
+  disengaja, karena `targetSdk` 36 yang sudah diuji di perangkat fisik.
+
+```bash
+./gradlew lint          # laporan: app|core/build/reports/lint-results-debug.html
+```
+
+---
+
+## ✅ Unit Test & Coverage
+
+`./gradlew testDebugUnitTest` menjalankan **43 test**, semuanya lulus.
+
+| Modul | Berkas | Yang diuji |
+|---|---|---|
+| `core` | `AnimeMapperTest` | JSON:API → domain: rescale skor 100→10, genre dari `included`, URL trailer, entri rusak dibuang |
+| `core` | `NetworkBoundResourceTest` | Alur cache-hit, refresh sukses, refresh gagal |
+| `core` | `AnimeRepositoryTest` | Fallback pencarian ke cache, simpan/hapus favorit |
+| `core` | `AnimeInteractorTest` | Delegasi use case ke repository |
+| `core` | `RetryInterceptorTest` | Retry 5xx dengan MockWebServer, 429 tidak diulang |
+| `core` | `CertificatePinnerFactoryTest` | Konfigurasi pinning (2 pin, hanya host Kitsu) |
+| `core` | `StringListConverterTest`, `ThemeModeTest` | TypeConverter Room, fallback tema |
+| `app` | `HomeViewModelTest` | Debounce pencarian, pull-to-refresh, error non-blocking |
+| `app` | `DetailViewModelTest` | Gabungan stream detail + favorit, toggle favorit |
+| `app` | `SettingViewModelTest` | Baca/tulis preferensi tema |
+| `app` | `AnimeUiMapperTest` | Format skor, plural episode/durasi, terjemahan status |
+
+Coverage memakai **JaCoCo**:
+
+```bash
+./gradlew jacocoTestReport   # laporan: app|core/build/reports/jacoco/jacocoTestReport/html/index.html
+```
+
+Hasil terakhir: `core` **52% baris**, `app` **32% baris** (kelas Fragment/Activity memang tidak
+diuji lewat unit test JVM).
+
+---
+
+## 🤖 Continuous Integration
+
+GitHub Actions: [`.github/workflows/android-ci.yml`](.github/workflows/android-ci.yml) →
+<https://github.com/nafiulirsad/aniverse-capstone/actions>
+
+| Job | Isi |
+|---|---|
+| `quality` | `./gradlew ktlintCheck` (code style) + `./gradlew lint` (Android Lint), laporan diunggah sebagai artifact |
+| `test` | `./gradlew jacocoTestReport` — unit test + coverage, ringkasan coverage ditulis ke Job Summary |
+| `vulnerabilities` | `gradle/actions/dependency-submission` (dependency graph → advisory GitHub) + pemindaian Trivy (`vuln,secret`) |
+| `build` | `./gradlew assembleRelease` (build yang menjalankan R8) dan `assembleDebug`; APK + `mapping.txt` diunggah sebagai artifact |
+
+Job `build` menunggu `quality` dan `test` lulus lebih dulu, jadi APK hanya dibuat dari kode yang
+sudah lolos analisis dan pengujian.
+
+---
+
+## 🧹 Perintah Verifikasi Lokal
+
+```bash
+./gradlew ktlintCheck        # code style
+./gradlew lint               # Android Lint (Inspect Code)
+./gradlew jacocoTestReport   # unit test + coverage
+./gradlew assembleRelease    # APK ter-obfuscate + mapping.txt
+./gradlew installDebug       # pasang build debug (berisi LeakCanary)
 ```
 
 ---
